@@ -4,7 +4,12 @@ from flask_sqlalchemy import SQLAlchemy
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///students.sqlite3'  # Corrected configuration key and file name
 app.config['SECRET_KEY'] = "random string"
+app.config['FIU_USERID'] = 'egonz740'
 db = SQLAlchemy(app)  # Corrected class name
+
+@app.context_processor
+def inject_user():
+    return dict(fiu_userid=app.config.get('FIU_USERID', 'egonz740'))
 
 class Students(db.Model):  # Corrected class name and capitalization
     id = db.Column('student_id', db.Integer, primary_key=True)  # Corrected column spelling and type
@@ -12,12 +17,14 @@ class Students(db.Model):  # Corrected class name and capitalization
     city = db.Column(db.String(50))  # Corrected column type and spelling
     addr = db.Column(db.String(200))  # Corrected column type and spelling
     pin = db.Column(db.String(10))  # Corrected column type and spelling
+    phone = db.Column(db.String(20))
 
-    def __init__(self, name, city, addr, pin):
+    def __init__(self, name, city, addr, pin, phone=None):
         self.name = name
         self.city = city
         self.addr = addr
         self.pin = pin
+        self.phone = phone
 
 @app.route('/')
 def show_all():
@@ -33,7 +40,8 @@ def new():
                 request.form['name'],
                 request.form['city'],
                 request.form['addr'],
-                request.form['pin']
+                request.form['pin'],
+                request.form.get('phone')
             )
             db.session.add(student)
             db.session.commit()  # Fixed typo in commit
