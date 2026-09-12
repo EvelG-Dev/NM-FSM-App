@@ -1,0 +1,186 @@
+---
+# roles/mysql/tasks/main.yml (Updated)
+
+- name: "MySQL | Download MySQL 8.4 Community EL9 repo RPM to /tmp"
+  ansible.builtin.command:
+    argv:
+      - curl
+      - -L
+      - -o
+      - "{{ mysql_repo_local }}"
+      - -A
+      - "{{ mysql_curl_user_agent }}"
+      - "{{ mysql_repo_url }}"
+    creates: "{{ mysql_repo_local }}"
+  tags: [mysql, packages]
+
+- name: "MySQL | Install MySQL 8.4 Community repo RPM"
+  ansible.builtin.dnf:
+    name: "{{ mysql_repo_local }}"
+    state: present
+    disable_gpg_check: true
+  tags: [mysql, packages]
+
+- name: "MySQL | Install mysql-community-server"
+  ansible.builtin.dnf:
+    name: mysql-community-server
+    state: present
+  tags: [mysql, packages]
+
+- name: "MySQL | Install python3-pip"
+  ansible.builtin.dnf:
+    name: python3-pip
+    state: present
+  tags: [mysql, packages]
+
+- name: "MySQL | Install PyMySQL via pip (AL2023 lacks python3-pymysql in dnf)"
+  ansible.builtin.pip:
+    name: PyMySQL
+    state: present
+    executable: pip3
+  tags: [mysql, packages]
+
+- name: "MySQL | Create MySQL data directory ({{ mysql_datadir }})"
+  ansible.builtin.file:
+    path: "{{ mysql_datadir }}"
+    state: directory
+    owner: mysql
+    group: mysql
+    mode: '0750'
+  tags: [mysql, configure]
+
+- name: "MySQL | Deploy custom MySQL configuration to /etc/my.cnf.d/custom.cnf"
+  ansible.builtin.template:
+    src: custom.cnf.j2
+    dest: /etc/my.cnf.d/custom.cnf
+    owner: root
+    group: root
+    mode: '0644'
+  notify: restart mysql
+  tags: [mysql, configure]
+
+# --- CORRECTED EMPTY DIRECTORY CHECK ---
+- name: "MySQL | Ensure /etc/my.cnf loads custom configuration"
+  ansible.builtin.lineinfile:
+    path: /etc/my.cnf
+    line: "!includedir /etc/my.cnf.d"
+    state: present
+    insertafter: EOF
+  notify: Restart mysqld
+  tags: [mysql, configure]
+
+- name: "MySQL | Check if data directory is empty"
+  ansible.builtin.find:
+    paths: "{{ mysql_datadir }}"
+    file_type: any
+    hidden: true
+  register: _mysql_datadir_contents
+  tags: [mysql, initialize]
+
+- name: "MySQL | Initialize data directory with mysqld --initialize-insecure"
+  ansible.builtin.command:
+    cmd: >
+      mysqld --initialize-insecure
+             --user=mysql
+             --datadir={{ mysql_datadir }}
+             --socket={{ mysql_socket }}
+  when: _mysql_datadir_contents.matched == 0
+  tags: [mysql, initialize]
+# ---------------------------------------
+
+- name: "MySQL | Enable and start mysqld service"
+  ansible.builtin.service:
+    name: "{{ mysql_service }}"
+    state: started
+    enabled: true
+  tags: [mysql, service]
+
+- name: "MySQL | Apply pending MySQL configuration changes"
+  ansible.builtin.meta: flush_handlers
+
+- name: "MySQL | Wait for MySQL to accept connections on 127.0.0.1:{{ mysql_port }}"
+  ansible.builtin.wait_for:
+    host: 127.0.0.1
+    port: "{{ mysql_port }}"
+    delay: 3
+    timeout: 60
+  tags: [mysql, service]
+
+- name: "MySQL | Check whether /root/.my.cnf already exists"
+  ansible.builtin.stat:
+    path: /root/.my.cnf
+  register: _root_my_cnf
+  tags: [mysql, root]
+
+- name: "MySQL | Set root password after fresh initialization (no-password login)"
+  community.mysql.mysql_user:
+    name: root
+    host_all: true
+    plugin: caching_sha2_password
+    plugin_auth_string: "{{ mysql_root_password }}"
+    login_unix_socket: "{{ mysql_socket }}"
+    login_user: root
+    login_password: ""
+    update_password: always
+    state: present
+  when: not _root_my_cnf.stat.exists
+  # no_log: true
+  tags: [mysql, root]
+
+- name: "MySQL | Deploy /root/.my.cnf for passwordless root client access"
+  ansible.builtin.template:
+    src: root_my_cnf.j2
+    dest: /root/.my.cnf
+    owner: root
+    group: root
+    mode: '0600'
+  # no_log: true
+  tags: [mysql, root]
+
+- name: "MySQL | Create application database '{{ mysql_db_name }}'"
+  community.mysql.mysql_db:
+    name: "{{ mysql_db_name }}"
+    state: present
+    config_file: /root/.my.cnf
+    login_unix_socket: "{{ mysql_socket }}"
+  tags: [mysql, db]
+
+- name: "MySQL | Create application user '{{ mysql_app_user }}' @ '%' with caching_sha2_password"
+  community.mysql.mysql_user:
+    name: "{{ mysql_app_user }}"
+    host: "%"
+    priv: "{{ mysql_db_name }}.*:ALL"
+    plugin: caching_sha2_password
+    plugin_auth_string: "{{ mysql_app_password }}"
+    update_password: on_create
+    state: present
+    config_file: /root/.my.cnf
+    login_unix_socket: "{{ mysql_socket }}"
+  tags: [mysql, db]
+
+- name: Install the data-volume bootstrap script
+  copy:
+    src: mysql-data-bootstrap.sh
+    dest: /usr/local/sbin/mysql-data-bootstrap.sh
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Install the bootstrap systemd unit
+  copy:
+    src: mysql-data-bootstrap.service
+    dest: /etc/systemd/system/mysql-data-bootstrap.service
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Ensure rsync is present (used by the seeding step)
+  dnf:
+    name: rsync
+    state: present
+
+- name: Enable the bootstrap unit (runs before mysqld on every boot)
+  systemd:
+    name: mysql-data-bootstrap.service
+    enabled: yes
+    daemon_reload: yes

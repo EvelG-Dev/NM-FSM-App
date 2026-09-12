@@ -1,0 +1,9 @@
+# /etc/my.cnf.d/custom.cnf
+# Managed by Ansible — do not edit manually.
+
+[mysqld]
+lower_case_table_names = 1
+port                   = {{ mysql_port }}
+bind-address           = {{ mysql_bind_address }}
+datadir                = {{ mysql_datadir }}
+socket                 = {{ mysql_socket }}

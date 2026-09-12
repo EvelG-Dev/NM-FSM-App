@@ -1,0 +1,14 @@
+[Unit]
+Description=Mount EBS volume, seed MySQL datadir
+After=local-fs.target
+Before=mysqld.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/sbin/mysql-data-bootstrap.sh
+TimeoutStartSec=180
+
+[Install]
+WantedBy=multi-user.target
+RequiredBy=mysqld.service

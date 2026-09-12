@@ -1,0 +1,13 @@
+---
+# roles/mysql/handlers/main.yml
+
+- name: Restart mysqld
+  ansible.builtin.service:
+    name: "{{ mysql_service }}"
+    state: restarted
+  listen: "restart mysql"
+
+- name: Reload systemd daemon
+  ansible.builtin.systemd:
+    daemon_reload: true
+  listen: "reload systemd"

@@ -1,0 +1,20 @@
+---
+# roles/mysql/defaults/main.yml
+# Lowest-precedence defaults — override in group_vars or host_vars.
+
+mysql_port:           3306
+mysql_bind_address:   "127.0.0.1"
+mysql_datadir:        /var/lib/mysql
+mysql_socket:         "{{ mysql_datadir }}/mysql.sock"
+mysql_service:        mysqld
+
+# Application
+mysql_app_user:       app
+mysql_db_name:        appdb
+
+# MySQL 8.4 EL9 repo — overrideable
+mysql_repo_rpm:       "mysql84-community-release-el9-1.noarch.rpm"
+mysql_repo_url:       "https://repo.mysql.com/{{ mysql_repo_rpm }}"
+mysql_repo_local:     "/tmp/{{ mysql_repo_rpm }}"
+mysql_curl_user_agent: >-
+  Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/115.0

@@ -1,0 +1,7 @@
+---
+# roles/mysql/vars/main.yml
+# Role-level vars (higher precedence than defaults).
+# These are implementation details unlikely to be overridden by users.
+
+_mysql_bootstrap_script: /usr/local/bin/mysql-data-bootstrap.sh
+_mysql_bootstrap_service: /etc/systemd/system/mysql-data-bootstrap.service

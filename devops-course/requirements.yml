@@ -1,0 +1,5 @@
+---
+# requirements.yml  —  Ansible Galaxy collection dependencies
+collections:
+  - name: community.mysql
+    version: ">=3.0.0"
