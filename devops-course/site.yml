@@ -1,0 +1,10 @@
+---
+# ============================================================
+# site.yml  —  Main Ansible playbook
+# Run with: ansible-playbook site.yml --vault-password-file <file>
+# ============================================================
+- name: Configure MySQL database servers
+  hosts: dbservers
+  become: true
+  roles:
+    - mysql
