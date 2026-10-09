@@ -1,3 +1,4 @@
+#!/bin/bash
 # Idempotent: safe on every boot. All state checks are re-runnable.
 set -euo pipefail
 DATADIR="/mnt/mysql-data"
