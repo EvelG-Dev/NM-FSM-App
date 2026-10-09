@@ -52,7 +52,7 @@ source "amazon-ebs" "mysql" {
 
   tags = {
     Name      = local.ami_name
-    Builder   = "packer"
+    BuiltBy   = "packer"
     Module    = "mysql"
     SourceAMI = "{{ .SourceAMI }}"
   }
