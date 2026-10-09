@@ -3,3 +3,6 @@ __pycache__/
 *.pyc
 instance/
 
+
+devops-course/vault_pass
+devops-course/group_vars/all/vault.yml
