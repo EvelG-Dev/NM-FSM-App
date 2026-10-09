@@ -3,4 +3,15 @@ __pycache__/
 *.pyc
 instance/
 
+<<<<<<< HEAD
 devops-course/vault_pass
+=======
+
+devops-course/vault_pass
+devops-course/group_vars/all/vault.yml
+devops-course/terraform/.terraform/
+devops-course/terraform/*.tfstate
+devops-course/terraform/*.tfstate.*
+devops-course/terraform/tfplan.bin
+devops-course/terraform/scale_lambda-*.zip
+>>>>>>> dev
