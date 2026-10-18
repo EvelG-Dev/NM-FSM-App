@@ -124,7 +124,7 @@
     update_password: always
     state: present
   when: not _root_my_cnf.stat.exists
-  # no_log: true
+  no_log: true
   tags: [mysql, root]
 
 - name: "MySQL | Deploy /root/.my.cnf for passwordless root client access"
@@ -134,7 +134,7 @@
     owner: root
     group: root
     mode: '0600'
-  # no_log: true
+  no_log: true
   tags: [mysql, root]
 
 - name: "MySQL | Create application database '{{ mysql_db_name }}'"
