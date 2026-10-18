@@ -1,8 +1,9 @@
+import os
 from flask import Flask, request, flash, url_for, redirect, render_template
 from flask_sqlalchemy import SQLAlchemy
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///students.sqlite3'  # Corrected configuration key and file name
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///students.sqlite3')  # Corrected configuration key and file name
 app.config['SECRET_KEY'] = "random string"
 app.config['FIU_USERID'] = 'egonz740'
 db = SQLAlchemy(app)  # Corrected class name
@@ -49,7 +50,8 @@ def new():
             return redirect(url_for('show_all'))
     return render_template('new.html')
 
+with app.app_context():
+    db.create_all()
+
 if __name__ == '__main__':
-    with app.app_context():
-        db.create_all()  # Ensure tables are created within the application context
     app.run(debug=True)
