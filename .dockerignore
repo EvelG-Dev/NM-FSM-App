@@ -10,3 +10,8 @@ devops-course
 *.key
 .env
 *.docx
+*.md
+test_*.py
+*_test.py
+tests
+.pytest_cache
