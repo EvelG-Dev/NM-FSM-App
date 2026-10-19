@@ -21,14 +21,29 @@ locals {
   ecr_repository_url = terraform.workspace == "staging" ? aws_ecr_repository.flask_repo[0].repository_url : data.aws_ecr_repository.flask_app[0].repository_url
 }
 
-# Shared ECS cluster
+# Staging owns the shared cluster; production only references it.
+moved {
+  from = aws_ecs_cluster.main
+  to   = aws_ecs_cluster.main[0]
+}
+
 resource "aws_ecs_cluster" "main" {
+  count = terraform.workspace == "staging" ? 1 : 0
   name = "cis4641-cluster"
 
   setting {
     name  = "containerInsights"
     value = "disabled"
   }
+}
+
+data "aws_ecs_cluster" "shared" {
+  count        = terraform.workspace == "production" ? 1 : 0
+  cluster_name = "cis4641-cluster"
+}
+
+locals {
+  ecs_cluster_id = terraform.workspace == "staging" ? aws_ecs_cluster.main[0].id : data.aws_ecs_cluster.shared[0].id
 }
 
 resource "aws_cloudwatch_log_group" "ecs" {
@@ -79,7 +94,7 @@ resource "aws_ecs_task_definition" "app" {
 
 resource "aws_ecs_service" "app" {
   name            = "flask-${terraform.workspace}"
-  cluster         = aws_ecs_cluster.main.id
+  cluster         = local.ecs_cluster_id
   task_definition = aws_ecs_task_definition.app.arn
   desired_count   = 1
   launch_type     = "FARGATE"
