@@ -12,6 +12,10 @@ db = SQLAlchemy(app)  # Corrected class name
 def inject_user():
     return dict(fiu_userid=app.config.get('FIU_USERID', 'egonz740'))
 
+def major_enabled():
+    return os.environ.get("ENABLE_MAJOR_FIELD", "false").lower() == "true"
+
+
 class Students(db.Model):  # Corrected class name and capitalization
     id = db.Column('student_id', db.Integer, primary_key=True)  # Corrected column spelling and type
     name = db.Column(db.String(100))  # Corrected column type and spelling
@@ -19,17 +23,19 @@ class Students(db.Model):  # Corrected class name and capitalization
     addr = db.Column(db.String(200))  # Corrected column type and spelling
     pin = db.Column(db.String(10))  # Corrected column type and spelling
     phone = db.Column(db.String(20))
+    major = db.Column(db.String(50), nullable=True)
 
-    def __init__(self, name, city, addr, pin, phone=None):
+    def __init__(self, name, city, addr, pin, phone=None, major=None):
         self.name = name
         self.city = city
         self.addr = addr
         self.pin = pin
         self.phone = phone
+        self.major = major
 
 @app.route('/')
 def show_all():
-    return render_template('show_all.html', students=Students.query.all())  # Corrected template rendering
+    return render_template('show_all.html', students=Students.query.all(), show_major=major_enabled())  # Corrected template rendering
 
 @app.route('/new', methods=['GET', 'POST'])
 def new():
@@ -42,16 +48,18 @@ def new():
                 request.form['city'],
                 request.form['addr'],
                 request.form['pin'],
-                request.form.get('phone')
+                request.form.get('phone'),
+                major=request.form.get('major') if major_enabled() else None
             )
             db.session.add(student)
             db.session.commit()  # Fixed typo in commit
             flash('Record was successfully added')
             return redirect(url_for('show_all'))
-    return render_template('new.html')
+    return render_template('new.html', show_major=major_enabled())
 
 with app.app_context():
     db.create_all()
 
 if __name__ == '__main__':
     app.run(debug=True)
+

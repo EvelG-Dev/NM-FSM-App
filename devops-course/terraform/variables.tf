@@ -55,3 +55,13 @@ variable "flask_image_tag" {
   type    = string
   default = "latest"
 }
+
+
+variable "enable_major_field" {
+  type = map(string)
+  default = {
+    staging    = "true"
+    production = "true"
+  }
+}
+
