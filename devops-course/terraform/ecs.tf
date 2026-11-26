@@ -75,6 +75,10 @@ resource "aws_ecs_task_definition" "app" {
         {
           name  = "DATABASE_URL"
           value = "mysql+pymysql://${var.db_user}:${var.db_password}@${var.db_ip[terraform.workspace]}/${var.db_name}"
+        },
+        {
+          name  = "ENABLE_MAJOR_FIELD"
+          value = var.enable_major_field[terraform.workspace]
         }
       ]
 
@@ -167,3 +171,4 @@ resource "aws_lambda_permission" "eventbridge" {
   principal     = "events.amazonaws.com"
   source_arn    = aws_cloudwatch_event_rule.mysql_state.arn
 }
+
