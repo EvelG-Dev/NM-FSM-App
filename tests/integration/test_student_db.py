@@ -42,3 +42,26 @@ def test_multiple_students(integration_app):
             assert Students.query.filter_by(name=name).first() is not None
     finally:
         cleanup(names)
+
+
+
+def test_student_with_major(integration_app):
+    name = "Integ-Major-" + uuid.uuid4().hex[:8]
+    try:
+        db.session.add(Students(name=name, city="Miami", addr="1 Main St", pin="33101", major="Information Technology"))
+        db.session.commit()
+        student = Students.query.filter_by(name=name).one()
+        assert student.major == "Information Technology"
+    finally:
+        cleanup([name])
+
+
+def test_student_without_major(integration_app):
+    name = "Integ-Null-" + uuid.uuid4().hex[:8]
+    try:
+        db.session.add(Students(name=name, city="Miami", addr="1 Main St", pin="33101"))
+        db.session.commit()
+        student = Students.query.filter_by(name=name).one()
+        assert student.major is None
+    finally:
+        cleanup([name])
